@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="Ankit Singh" content="">
+
+    <title>The Game</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Theme CSS -->
+    <link href="css/new-age.min.css" rel="stylesheet">
+    <style type="text/css">
+        .hidden {
+             display:none;
+        }
+    </style>
+
+</head>
+
+<body id="page-top">
+
+    <header>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="header-content">
+                        <div class="header-content-inner">
+                            <a href="#" class="btn btn-outline btn-xl page-scroll" data-toggle="modal" data-target="#myModal">Start New Game</a>
+
+                            <table id="gametable" class="table">
+                                <thead>
+                                    <tr class="filters">
+                                        <th>Current Games</th>
+                                        <th></th>
+                                    </tr>
+
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Jack</td>
+                                        <td><a href="#" class="btn btn-outline">Join</a></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Jennifer</td>
+                                        <td><a href="#" class="btn btn-outline">Join</a></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Kim</td>
+                                        <td><a href="#" class="btn btn-outline">Join</a></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                    </div>
+                </div>
+                <div class="col-sm-6 hidden">
+                    <div class="device-container">
+                        <div class="device-mockup iphone6_plus portrait white">
+                            <div class="device">
+                                <div class="screen">
+                                    <!-- Demo image for screen mockup, you can put an image here, some HTML, an animation, video, or anything else! -->
+                                    <canvas id="canvas" width="600px" height="600px" style="opacity:0.5;"></canvas>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3 hidden">
+                    <div class="device-container">
+                      <table id="scoretable" class="table">
+                                <thead>
+                                    <tr class="filters">
+                                        <th>Player</th>
+                                        <th>Score</th>
+                                    </tr>
+
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>You</td>
+                                        <td>30</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Me</td>
+                                        <td>30</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Hum</td>
+                                        <td>30</td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal to get Name and width height canvas -->
+    <div id="myModal" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Enter Game Details</h4>
+          </div>
+          <div class="modal-body">
+                <label for="nickname">Nick Name</label>
+                <input class="form-control" id="nickname" type="text" value="" required="true">
+
+                <label for="rows">Rows</label>
+                <input class="form-control" id="rows" type="text" value="10">
+
+                <label for="columns">Columns</label>
+                <input class="form-control" id="columns" type="text" value="10">
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="startgame" class="btn btn-default" data-dismiss="modal">Start Game</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- End of Modal -->
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2016 - All Rights Reserved.</p>
+            <ul class="list-inline">
+                <li>
+                    <a href="https://github.com/ank-it">Ankit Singh</a>
+                </li>
+            </ul>
+        </div>
+    </footer>
+
+    <!-- jQuery -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+
+    var ROWS = 0;
+    var COLUMNS = 0;
+    var GAME_STATE = true; 
+    var GAME_ID;
+    var NICK_NAME = '';
+    var GAMES = [];
+    var GAME_DETAIL;
+
+    document.getElementById("startgame").addEventListener("click", startgame);
+
+    // document.getElementById("myBtn").addEventListener("click", displayDate);
+
+    // document.getElementById("myBtn").addEventListener("click", displayDate);
+
+
+    var socket = io.connect('/');
+    socket.on('connected', function( data ) {
+        console.log( 'Connected successfully to the socket.io server. ' + data.message );
+    });
+
+    socket.on('newgame', function( data ) {
+        console.log('new game created ....', data);
+
+        GAME_DETAIL = {
+            gameId: data.gameId,
+            mySocketId: data.mySocketId
+        };
+        socket.emit('playerJoinGame', data);
+        console.log('Requested to join the room');
+    });
+
+    socket.on('allgames', function(data) {
+        console.log('All Games data received.', data);
+        // Show the data in required cell
+    });
+
+    socket.on('playerJoinedRoom', function(data) {
+        console.log('A New player joined the room', data);
+    });
+
+    socket.on('error', function( data ) {
+        console.log('Error', data);
+    });
+
+
+    function startgame() {
+        // Emit new game connection here 
+        // Params would include the rows and columns entered
+        ROWS = document.getElementById('rows').value;
+        COLUMNS = document.getElementById('columns').value;
+        NICK_NAME = document.getElementById('nickname').value;
+        console.log('Values Obtained on Click: ', ROWS, COLUMNS, NICK_NAME);
+        socket.emit('newgame', { nickname: NICK_NAME, rows: ROWS, columns: COLUMNS });
+    }
+
+
+    function initCanvasBox() {
+        var canvas = document.getElementById("canvas"),
+        c = canvas.getContext("2d");
+        canvas.addEventListener('click', handleClick);
+        // canvas.addEventListener('mousemove', handleClick);
+
+        function drawBox() {
+            c.beginPath();
+            c.fillStyle = "white";
+            c.lineWidth = 3;
+            c.strokeStyle = 'black';
+            for (var row = 0; row < 14; row++) {
+                for (var column = 0; column < 14; column++) {
+                    var x = column * 40;
+                    var y = row * 40;
+                    c.rect(x, y, 40, 40);
+                    c.fill();
+                    c.stroke();
+                }
+            }
+            c.closePath();
+        }
+        
+        function handleClick(e) {
+            c.fillStyle = "blue";
+          
+            c.fillRect(Math.floor(e.offsetX/40)*40, 
+                       Math.floor(e.offsetY/40)*40,
+                       40, 40);
+        }
+        drawBox();
+    }
+       
+    </script>
+
+</body>
+
+</html>
