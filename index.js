@@ -12,7 +12,7 @@ app.get('/', function(req, res) {
 
 app.get( '/*' , function( req, res, next ) {
 	var file = req.params[0]; 
-	if(verbose) console.log('\t :: Express :: file requested : ' + file);
+	//console.log('\t :: Express :: file requested : ' + file);
 	res.sendfile( __dirname + '/' + file );
 }); 
 
