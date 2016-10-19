@@ -39,22 +39,11 @@
                                         <th>Current Games</th>
                                         <th></th>
                                     </tr>
-
+                                
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Jack</td>
-                                        <td><a href="#" class="btn btn-outline">Join</a></td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>Jennifer</td>
-                                        <td><a href="#" class="btn btn-outline">Join</a></td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>Kim</td>
-                                        <td><a href="#" class="btn btn-outline">Join</a></td>
+                                        <td id="joingame"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -62,11 +51,12 @@
                     
                     </div>
                 </div>
-                <div class="col-sm-6 hidden">
+                <div class="col-sm-6">
+                    <div> <h4 id="waitingbar"> Waiting for players to join ...</h4></div>
                     <div class="device-container">
                         <div class="device-mockup iphone6_plus portrait white">
                             <div class="device">
-                                <div class="screen">
+                                <div class="screen" id="gamestartstate">
                                     <!-- Demo image for screen mockup, you can put an image here, some HTML, an animation, video, or anything else! -->
                                     <canvas id="canvas" width="600px" height="600px" style="opacity:0.5;"></canvas>
                                 </div>
@@ -75,7 +65,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-3 hidden">
+                <div class="col-sm-3" id="gamestartstate">
                     <div class="device-container">
                       <table id="scoretable" class="table">
                                 <thead>
@@ -88,16 +78,6 @@
                                 <tbody>
                                     <tr>
                                         <td>You</td>
-                                        <td>30</td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>Me</td>
-                                        <td>30</td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>Hum</td>
                                         <td>30</td>
                                     </tr>
                                 </tbody>
@@ -119,8 +99,8 @@
             <h4 class="modal-title">Enter Game Details</h4>
           </div>
           <div class="modal-body">
-                <label for="nickname">Nick Name</label>
-                <input class="form-control" id="nickname" type="text" value="" required="true">
+                <!-- <label for="nickname">Nick Name</label>
+                <input class="form-control" id="nickname" type="text" value="" required="true"> -->
 
                 <label for="rows">Rows</label>
                 <input class="form-control" id="rows" type="text" value="10">
@@ -138,6 +118,31 @@
     </div>
 
     <!-- End of Modal -->
+
+    <!-- Modal -->
+    <div id="joinModal" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title" id="joinModalHeader">Enter Game Details</h4>
+          </div>
+          <div class="modal-body">
+                <label for="nickname">Nick Name</label>
+                <input class="form-control" id="nickname" type="text" value="" required="true">
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="startgame" class="btn btn-default" data-dismiss="modal">Enter</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    
+    <!--  -->
 
     <footer>
         <div class="container">
@@ -159,18 +164,23 @@
     <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
 
     <script type="text/javascript">
+        $(window).load(function(){
+            $('#joinModal').modal('show');
+        });
 
     var ROWS = 0;
     var COLUMNS = 0;
     var GAME_STATE = true; 
     var GAME_ID;
-    var NICK_NAME = '';
+    var PLAYER_ID;
+    var NICK_NAME = 'Guest';
     var GAMES = [];
     var GAME_DETAIL;
+    var COLOUR = '';
 
     document.getElementById("startgame").addEventListener("click", startgame);
 
-    // document.getElementById("myBtn").addEventListener("click", displayDate);
+    document.getElementById("joingame").addEventListener("click", joingame);
 
     // document.getElementById("myBtn").addEventListener("click", displayDate);
 
@@ -178,6 +188,7 @@
     var socket = io.connect('/');
     socket.on('connected', function( data ) {
         console.log( 'Connected successfully to the socket.io server. ' + data.message );
+        socket.emit('allgames');
     });
 
     socket.on('newgame', function( data ) {
@@ -187,17 +198,60 @@
             gameId: data.gameId,
             mySocketId: data.mySocketId
         };
-        socket.emit('playerJoinGame', data);
-        console.log('Requested to join the room');
+
+        COLOUR = data.game.player.colour;
+        PLAYER_ID = data.game.player.id;
+        GAME_ID = data.gameId;
+        var playerData = {
+            gameId: data.game.gameId,
+            nickname: data.game.player.name
+        }
+
+        // socket.emit('playerJoinGame', playerData);
+        // console.log('Requested to join the room');
     });
 
     socket.on('allgames', function(data) {
         console.log('All Games data received.', data);
-        // Show the data in required cell
+        showAllGames(data.games);
     });
+
+
 
     socket.on('playerJoinedRoom', function(data) {
         console.log('A New player joined the room', data);
+        GAME_ID = data.gameId;
+    });
+
+    socket.on('mydetails', function(player) {
+        PLAYER_ID = player.id; 
+        COLOUR = player.colour;
+    });
+
+    socket.on('playgame', function(data) {
+        // Enable board and clicks 
+        console.log('Play game data: ', data);
+        var div = document.getElementById("gamestartstate");
+        div.style.display = 'block';
+        document.getElementById("waitingbar").innerText = "Game Started... Start tapping the tiles!"
+        ROWS = data.rows;
+        COLUMNS = data.columns;
+        initCanvasBox();
+    });
+
+    socket.on('squareacquired', function(grid) {
+        console.log(grid);
+        updateCanvas(grid);
+    });
+
+    socket.on('updatescore', function(data) {
+        console.log('Scores are :', data.scores);
+        showScores(data.scores);
+    })
+
+    socket.on('gameover', function(data) {
+        console.log('GAME OVER !!! WINNER IS : ', data );
+        document.getElementById("waitingbar").innerText = "Congratulations!" + data + "has Won !!! Please refresh the page to start new game!" ;
     });
 
     socket.on('error', function( data ) {
@@ -216,6 +270,51 @@
     }
 
 
+    function joingame(gameId) {
+        console.log('On click',gameId);
+        NICK_NAME = document.getElementById('nickname').value;
+        var playerData = {
+            gameId: gameId,
+            nickname: NICK_NAME
+        }
+        GAME_ID = gameId;
+        document.getElementById('joingame').display = 'true';
+
+        socket.emit('playerJoinGame', playerData);
+        console.log('Requested to join the room');      
+    }
+
+
+    function showAllGames(data) {
+        var table = document.getElementById('gametable');
+        console.log('Added new Games :', data.length);
+        for (var i = 0; i < data.length; i++) {
+            var rowCount = table.rows.length;
+            console.log('Updating table');
+            var row = table.insertRow(rowCount);
+            var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
+            cell1.innerHTML = 'Game# ' + data[i].gameId + ', Players: '+ data[i].players.length + '   ';
+            cell2.innerHTML = '<td><a id="joingame" href="#" class="btn btn-outline" data-target="#joinModal" onclick="joingame('+ data[i].gameId  +')">Join</a></td>';
+            table.appendChild( row );
+            console.log('Added new Row');
+        }
+
+    }
+
+    function showScores(scores) {
+        var table = document.getElementById('scoretable');
+        for (var i = 0; i < scores.length; i++) {
+            var rowCount = table.rows.length;
+            console.log('Updating table');
+            var row = table.insertRow(rowCount);
+            var cell1 = row.insertCell(0);
+            cell1.innerHTML = scores[i].name + ' : '+ scores[i].score;
+            table.appendChild( row );
+        }
+
+    }
+
     function initCanvasBox() {
         var canvas = document.getElementById("canvas"),
         c = canvas.getContext("2d");
@@ -225,10 +324,10 @@
         function drawBox() {
             c.beginPath();
             c.fillStyle = "white";
-            c.lineWidth = 3;
+            c.lineWidth = 1;
             c.strokeStyle = 'black';
-            for (var row = 0; row < 14; row++) {
-                for (var column = 0; column < 14; column++) {
+            for (var row = 0; row < ROWS; row++) {
+                for (var column = 0; column < COLUMNS; column++) {
                     var x = column * 40;
                     var y = row * 40;
                     c.rect(x, y, 40, 40);
@@ -240,14 +339,66 @@
         }
         
         function handleClick(e) {
-            c.fillStyle = "blue";
-          
+            
+            // get mouse click position
+            var mx = e.offsetX;
+            var my = e.offsetY;
+
+            // calculate grid square numbers
+            var gx = ~~ (mx / 40);
+            var gy = ~~ (my / 40);
+            var w  = ROWS*40;
+            var h  = COLUMNS*40;
+
+            console.log('Clicked At: ', gx+1, gy+1);
+            console.log(COLOUR);
+
+            // make sure we're in bounds
+            if (gx < 0 || gx >= w || gy < 0 || gy >= h) {
+                return;
+            }
+
+            socket.emit('acquiresquare', GAME_ID, PLAYER_ID, gx, gy);
+
+            c.fillStyle = COLOUR;
             c.fillRect(Math.floor(e.offsetX/40)*40, 
                        Math.floor(e.offsetY/40)*40,
                        40, 40);
         }
         drawBox();
     }
+
+    function updateCanvas(grid) {
+        var canvas = document.getElementById("canvas"),
+        c = canvas.getContext("2d");
+
+        function updateBox() {
+            // c.lineWidth = 1;
+            // c.strokeStyle = 'black';
+            for (var row = 0; row < ROWS; row++) {
+                for (var column = 0; column < COLUMNS; column++) {
+                    if (grid[row][column] != 0 ) {
+                        c.fillStyle = grid[row][column];
+                        var x = row * 40;
+                        var y = column * 40;
+                        // c.rect(x, y, 40, 40);
+                        // c.fill();
+                        c.fillRect(x, y, 40, 40);
+                        // c.stroke();
+                    }
+                    else {
+                        // var x = column * 40;
+                        // var y = row * 40;
+                        // c.rect(x, y, 40, 40);
+                        // c.fill();
+                        // c.stroke();
+                    }
+                }
+            }
+        }
+        updateBox();
+    } 
+
        
     </script>
 
