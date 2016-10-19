@@ -1,23 +1,35 @@
+'use srtrict';
 
 function getRandomColor() {
     var letters = '0123456789ABCDEF';
-    var color = '#';
+    var colour = '#';
     for (var i = 0; i < 6; i++ ) {
-        color += letters[Math.floor(Math.random() * 16)];
+        colour += letters[Math.floor(Math.random() * 16)];
     }
-    return color;
+    return colour;
 }
 
-// Constructor
-function Player(id) {
-  // always initialize all instance properties
-  this.id = id;
+function Player(name) {
+  this.id = Math.random() * 1000;
+  this.name = name;
   this.colour = getRandomColor();
+  this.score = 0;
 }
 
-
-// class methods
 Player.prototype = {
+
+	incrementScore: function() {
+		this.score++;
+	},
+
+	getPlayerDetails: function() {
+		return {
+			id: this.id,
+			name: this.name,
+			colour: this.colour,
+			score: this.score
+		}
+	}
 
 };
 
