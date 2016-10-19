@@ -251,7 +251,7 @@
 
     socket.on('gameover', function(data) {
         console.log('GAME OVER !!! WINNER IS : ', data );
-        document.getElementById("waitingbar").innerText = "Congratulations!" + data + "has Won !!! Please refresh the page to start new game!" ;
+        document.getElementById("waitingbar").innerText = "Congratulations! " + data + " has Won !!! Please refresh the page to start new game!" ;
     });
 
     socket.on('error', function( data ) {
@@ -287,7 +287,7 @@
 
     function showAllGames(data) {
         var table = document.getElementById('gametable');
-        console.log('Added new Games :', data.length);
+        table.innerHTML = "";
         for (var i = 0; i < data.length; i++) {
             var rowCount = table.rows.length;
             console.log('Updating table');
@@ -297,13 +297,13 @@
             cell1.innerHTML = 'Game# ' + data[i].gameId + ', Players: '+ data[i].players.length + '   ';
             cell2.innerHTML = '<td><a id="joingame" href="#" class="btn btn-outline" data-target="#joinModal" onclick="joingame('+ data[i].gameId  +')">Join</a></td>';
             table.appendChild( row );
-            console.log('Added new Row');
         }
 
     }
 
     function showScores(scores) {
         var table = document.getElementById('scoretable');
+        table.innerHTML = "";
         for (var i = 0; i < scores.length; i++) {
             var rowCount = table.rows.length;
             console.log('Updating table');
